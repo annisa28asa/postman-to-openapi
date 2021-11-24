@@ -1,0 +1,66 @@
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "log"
+    "net/http"
+)
+
+type ToDo struct {
+    kegiatan string `json:"kegiatan"`
+    Waktu    string `json:"waktu"`
+}
+
+type JSONResponse struct {
+    Code    int    `json:"Code"`
+    Success bool   `json:"success"`
+    Message string  `json:"message"`
+    Data    interface{} `json:"data"`
+}
+
+func main() {
+    daftarKegiatan :=[]ToDo{}
+    daftarKegiatan = append(daftarKegiatan, ToDo{"liburan ke bali","20-11-20"})
+    daftarKegiatan = append(daftarKegiatan, ToDo{"liburan ke jogja","21-11-20"})
+    http.HandleFunc("/",func(rw http.ResponseWriter, r *http.Request) {
+        // http:/localhost:8080/
+        res:= JSONResponse{}
+        if r.Method == "GET" {
+            res.Code = http.StatusCreated
+            res.Success= true
+            res.Message= "Berhasil menambahkan data"
+            res.Data = daftarKegiatan
+            
+        }else if r.Method == "POST"{
+            jsonDecode:= json.NewDecoder(r.Body)
+            aktivitasBaru := ToDo{}        
+            
+
+            if err:= jsonDecode.Decode(&aktivitasBaru); err != nil{
+                fmt.Println("terjadi kesalahan")
+                http.Error(rw,"Terjadi kesalahan saat baca input",http.StatusInternalServerError )
+                return
+            }    
+            daftarKegiatan= append(daftarKegiatan, aktivitasBaru)
+            res.Code = http.StatusCreated
+            res.Success= true
+            res.Message= "Berhasil menambahkan data"
+            res.Data = aktivitasBaru
+
+            
+            
+            resJSON, err := json.Marshal(res)
+            if err != nil{
+                fmt.Println("Terjadi Kesalahan")
+                http.Error(rw,"Terjadi kesalahan saat ubah json",http.StatusInternalServerError)
+                return
+            }
+            rw.Header().Add("Content=Typr","application/json")
+            rw.Write(resJSON)
+        }
+    })
+
+    fmt.Println("Listrning on: 8080....")
+    log.Fatal(http.ListenAndServe(":8080",nil))
+}
